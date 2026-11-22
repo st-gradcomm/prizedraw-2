@@ -1,0 +1,99 @@
+/* ---------- end credits (RESULT) ---------- */
+.credits {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--cream-light);
+  background: radial-gradient(ellipse at 50% 40%, #241c16 0%, #0e0b09 70%, #000 100%);
+}
+
+.credits__theend {
+  margin: 0;
+  font-size: 300px;
+  color: var(--cream-light);
+}
+
+.credits__roll {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+  width: 1600px;
+}
+
+.credits__head {
+  text-align: center;
+}
+
+.credits__head h1 {
+  margin: 0;
+  font-size: 150px;
+  color: var(--gold);
+}
+
+.credits__head p {
+  margin: 4px 0 0;
+  font-size: 30px;
+  opacity: 0.8;
+}
+
+.credits__row {
+  display: grid;
+  grid-template-columns: 430px 1fr;
+  align-items: center;
+  gap: 40px;
+  padding-top: 34px;
+  border-top: 1px solid rgb(246 239 226 / 0.18);
+}
+
+.credits__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+.credits__label .display {
+  font-size: 54px;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.credits__label .serif {
+  font-size: 30px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.credits__ids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 44px;
+  font-weight: 700;
+  font-size: 64px;
+}
+
+.credits__row--1 .credits__ids {
+  font-size: 104px;
+  color: var(--gold);
+}
+
+.credits__row--2 .credits__ids {
+  font-size: 84px;
+}
+
+.credits__foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 10px;
+  font-size: 22px;
+  opacity: 0.7;
+}
+
+.credits__seed {
+  font-family: ui-monospace, monospace;
+  font-size: 18px;
+}

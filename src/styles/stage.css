@@ -1,0 +1,382 @@
+/* ---------- 16:9 stage ---------- */
+.stage-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  background: var(--film);
+  transform-origin: center;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+body.hide-cursor,
+body.hide-cursor * {
+  cursor: none !important;
+}
+
+/* ---------- film strip ---------- */
+.film-strip {
+  background-color: var(--film);
+}
+
+.film-strip--vertical {
+  position: relative;
+  width: 84px;
+}
+
+.film-strip--vertical::before,
+.film-strip--horizontal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.film-strip--vertical::before {
+  inset: 0 24px;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 14px,
+    var(--cream-light) 14px 40px,
+    transparent 40px 54px
+  );
+  border-radius: 6px;
+  -webkit-mask: repeating-linear-gradient(180deg, transparent 0 14px, #000 14px 40px, transparent 40px 54px);
+  mask: repeating-linear-gradient(180deg, transparent 0 14px, #000 14px 40px, transparent 40px 54px);
+}
+
+.film-strip--horizontal {
+  position: relative;
+  height: 72px;
+}
+
+.film-strip--horizontal::before {
+  inset: 20px 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 16px,
+    var(--cream-light) 16px 46px,
+    transparent 46px 62px
+  );
+  opacity: 0.92;
+}
+
+/* ---------- theater (READY) ---------- */
+.theater {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, #3a1414 0%, #1a0b0b 55%, #0b0606 100%);
+}
+
+.theater__room {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 40%;
+}
+
+.theater__screen {
+  position: absolute;
+  left: 230px;
+  top: 150px;
+  width: 1460px;
+  height: 660px;
+  background: var(--cream);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 10px #0d0a09,
+    0 0 140px rgb(241 201 124 / 0.28),
+    inset 0 0 120px rgb(120 90 50 / 0.25);
+}
+
+.theater__side {
+  position: absolute;
+  top: 60px;
+  width: 260px;
+  height: 820px;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.25), transparent 30%, transparent 70%, rgb(0 0 0 / 0.6)),
+    repeating-linear-gradient(90deg, #3e0a0d 0 10px, #7a181c 34px, #9b2328 50px, #651317 70px, #3e0a0d 90px);
+}
+
+.theater__side--left {
+  left: 0;
+  -webkit-mask: linear-gradient(90deg, #000 70%, transparent);
+  mask: linear-gradient(90deg, #000 70%, transparent);
+}
+
+.theater__side--right {
+  right: 0;
+  -webkit-mask: linear-gradient(270deg, #000 70%, transparent);
+  mask: linear-gradient(270deg, #000 70%, transparent);
+}
+
+.curtain {
+  position: absolute;
+  top: 60px;
+  width: 980px;
+  height: 860px;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.35), transparent 22%, transparent 68%, rgb(0 0 0 / 0.65)),
+    repeating-linear-gradient(90deg, #470b0f 0, #86191e 38px, #ac2a30 58px, #7a171c 86px, #470b0f 116px);
+  box-shadow: 0 0 60px rgb(0 0 0 / 0.6);
+}
+
+.curtain--left {
+  left: -10px;
+  border-bottom-right-radius: 40px 30px;
+}
+
+.curtain--right {
+  right: -10px;
+  border-bottom-left-radius: 40px 30px;
+}
+
+.theater__valance {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 132px;
+  z-index: 3;
+  background:
+    linear-gradient(
+      transparent calc(100% - 40px),
+      var(--gold-deep) calc(100% - 40px) calc(100% - 33px),
+      transparent calc(100% - 33px)
+    ),
+    linear-gradient(180deg, rgb(0 0 0 / 0.5), transparent 60%),
+    repeating-linear-gradient(90deg, #4a0c10 0, #8f1c21 30px, #a8282e 44px, #6b1418 64px, #4a0c10 88px);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.65);
+  -webkit-mask:
+    linear-gradient(#000, #000) top / 100% calc(100% - 30px) no-repeat,
+    radial-gradient(64px 32px at 60px 0, #000 98%, transparent) bottom / 120px 30px repeat-x;
+  mask:
+    linear-gradient(#000, #000) top / 100% calc(100% - 30px) no-repeat,
+    radial-gradient(64px 32px at 60px 0, #000 98%, transparent) bottom / 120px 30px repeat-x;
+}
+
+.theater__seats {
+  position: absolute;
+  inset: auto 0 0;
+  height: 300px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.theater__seats::before,
+.theater__seats::after {
+  content: '';
+  position: absolute;
+  left: -40px;
+  right: -40px;
+}
+
+.theater__seats::before {
+  bottom: 120px;
+  height: 120px;
+  background:
+    radial-gradient(ellipse 66px 62px at 50% 100%, #2a0f10 97%, transparent 100%) 0 0 / 152px 120px repeat-x;
+  filter: drop-shadow(0 -2px 0 rgb(170 40 46 / 0.35));
+}
+
+.theater__seats::after {
+  bottom: -40px;
+  height: 220px;
+  background:
+    linear-gradient(180deg, transparent 55%, #0b0505 55%),
+    radial-gradient(ellipse 96px 100px at 50% 100%, #160808 97%, transparent 100%) -60px 0 / 214px 200px repeat-x;
+  filter: drop-shadow(0 -3px 0 rgb(170 40 46 / 0.3));
+}
+
+.theater__logo {
+  position: absolute;
+  right: 56px;
+  bottom: 36px;
+  z-index: 5;
+  opacity: 0.9;
+}
+
+/* 닫힌 커튼 위 타이틀 */
+.marquee {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 120px;
+  text-align: center;
+  color: var(--cream-light);
+  pointer-events: none;
+}
+
+.marquee__title {
+  margin: 0;
+  font-size: 340px;
+  color: var(--gold);
+  text-shadow: 0 6px 30px rgb(0 0 0 / 0.55);
+}
+
+.marquee__subtitle {
+  margin: 24px 0 0;
+  font-size: 54px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 3px 18px rgb(0 0 0 / 0.6);
+}
+
+.marquee__lucky {
+  margin: 36px 0 0;
+  font-size: 44px;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+}
+
+.marquee__count {
+  margin: 18px 0 0;
+  font-size: 28px;
+  opacity: 0.75;
+}
+
+/* 스크린 속 Lucky Draw */
+.screen-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.screen-title__org {
+  margin: 0 0 30px;
+  font-size: 28px;
+  color: var(--ink-soft);
+}
+
+.screen-title__heading {
+  margin: 0 0 36px;
+  font-size: 230px;
+  color: var(--ink);
+}
+
+.screen-title__lineup {
+  display: flex;
+  gap: 28px;
+}
+
+.lineup-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 440px;
+  padding: 14px 22px 14px 14px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+}
+
+.lineup-card img {
+  width: 112px;
+  height: 92px;
+  object-fit: contain;
+}
+
+.lineup-card > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.lineup-card__ordinal {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lineup-card__ordinal small {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.lineup-card__name {
+  margin-top: 6px;
+  font-size: 22px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+/* ---------- operator ---------- */
+.operator-bar {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgb(15 12 10 / 0.82);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.operator-bar.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.op-btn {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cream-light);
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 10px;
+}
+
+.op-btn:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.op-btn--primary {
+  color: var(--ink);
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.op-btn--primary:hover {
+  background: #f7d699;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  z-index: 100;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  font-size: 14px;
+  color: var(--cream-light);
+  background: rgb(15 12 10 / 0.85);
+  border-radius: 999px;
+}

@@ -1,0 +1,149 @@
+/* ---------- public winners page (#/winners, 모바일 우선) ---------- */
+.winners {
+  min-height: 100%;
+  overflow-x: hidden;
+  padding: 36px 20px 56px;
+  background: var(--cream);
+}
+
+.winners__sheet {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.winners__header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.winners__org {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.winners__header h1 {
+  margin: 6px 0 0;
+  font-size: 72px;
+}
+
+.winners__subtitle {
+  margin: 6px 0 0;
+  font-weight: 700;
+}
+
+.winners__prize {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--cream-light);
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+}
+
+.winners__prize-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.winners__prize-head img {
+  width: 76px;
+  height: 64px;
+  object-fit: contain;
+  background: var(--cream);
+  border-radius: 12px;
+}
+
+.winners__ordinal {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.winners__ordinal small {
+  margin-left: 6px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.winners__prize-name {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.winners__tickets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.winners__tickets--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.winners__tickets .ticket__main {
+  padding: 8px 6px 0;
+}
+
+.winners__tickets .ticket {
+  height: 170px;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.winners__tickets .ticket--sm .ticket__brand { font-size: 26px; }
+.winners__tickets .ticket--sm .ticket__label { font-size: 13px; }
+.winners__tickets .ticket--sm .ticket__id { font-size: 23px; }
+.winners__tickets .ticket--sm .ticket__barcode { height: 22px; }
+
+.winners__tickets--single .ticket {
+  height: 220px;
+}
+
+.winners__tickets--single .ticket--sm .ticket__brand { font-size: 36px; }
+.winners__tickets--single .ticket--sm .ticket__id { font-size: 44px; }
+
+.winners__message {
+  padding: 60px 0;
+  text-align: center;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.winners__verify {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.winners__verify summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.winners__verify dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 10px 0 0;
+}
+
+.winners__verify dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.winners__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 32px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
