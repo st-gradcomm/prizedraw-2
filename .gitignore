@@ -19,3 +19,7 @@ Thumbs.db
 *.log
 coverage/
 .claude/settings.local.json
+
+# design references (contain real names; keep local only)
+docs/reference/*
+!docs/reference/.gitkeep
