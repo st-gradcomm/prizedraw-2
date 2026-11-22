@@ -5,24 +5,35 @@ import type {
   Participant,
   PrizeConfig,
   Rank,
+  ResultFile,
   ValidationResult,
 } from '../types/raffle';
 
 export const STUDENT_ID_REGEX = /^\d{8}$/;
 
+export const RANKS: Rank[] = ['1등', '2등', '3등'];
+
 export const DEFAULT_PRIZES: PrizeConfig[] = [
-  { rank: '3등', name: '생협 아메리카노', count: 5, revealOrder: 1 },
-  { rank: '2등', name: '팬리스 선풍기', count: 2, revealOrder: 2 },
-  { rank: '1등', name: '스탠바이미', count: 1, revealOrder: 3 },
+  { rank: '3등', name: '샤오미 보조배터리', count: 5, revealOrder: 1 },
+  { rank: '2등', name: '로지텍 키보드 마우스 세트', count: 2, revealOrder: 2 },
+  { rank: '1등', name: '에어팟 5세대', count: 1, revealOrder: 3 },
 ];
 
-export const totalPrizeCount = DEFAULT_PRIZES.reduce(
-  (sum, prize) => sum + prize.count,
-  0,
-);
+export const ALGORITHM = 'SHA-256(seed + ":" + studentId), ascending sort';
+
+const HEADER_NAMES = new Set(['student_id', 'studentid', 'student id', 'id', '학번']);
+
+export function totalPrizeCount(prizes: PrizeConfig[] = DEFAULT_PRIZES): number {
+  return prizes.reduce((sum, prize) => sum + prize.count, 0);
+}
+
+/** 공개 순서대로 정렬된 경품 목록 (기본: 3등 → 2등 → 1등) */
+export function prizesInRevealOrder(prizes: PrizeConfig[] = DEFAULT_PRIZES): PrizeConfig[] {
+  return [...prizes].sort((a, b) => a.revealOrder - b.revealOrder);
+}
 
 export function normalizeStudentId(value: string): string {
-  return value.trim().replace(/\s+/g, '').replace(/[^\d]/g, '');
+  return value.replace(/[^\d]/g, '');
 }
 
 export function validateStudentId(value: string): boolean {
@@ -40,7 +51,7 @@ export function maskStudentId(id: string): string {
 
 export function reasonLabel(reason: InvalidReason): string {
   const labels: Record<InvalidReason, string> = {
-    EMPTY: '빈 행',
+    EMPTY: '빈 값',
     INVALID_FORMAT: '학번 형식 오류',
     DUPLICATE: '중복',
   };
@@ -62,7 +73,7 @@ function splitCsvLine(line: string): string[] {
       index += 1;
     } else if (char === '"') {
       quoted = !quoted;
-    } else if (char === ',' && !quoted) {
+    } else if ((char === ',' || char === '\t') && !quoted) {
       cells.push(cell);
       cell = '';
     } else {
@@ -71,68 +82,79 @@ function splitCsvLine(line: string): string[] {
   }
 
   cells.push(cell);
-  return cells;
+  return cells.map((value) => value.trim());
 }
 
-function extractInputRows(input: string): Array<{ rowIndex: number; value: string }> {
-  const lines = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+function isHeaderCell(cell: string): boolean {
+  const lower = cell.toLowerCase();
+  return HEADER_NAMES.has(lower) || lower.includes('학번');
+}
 
-  return lines.reduce<Array<{ rowIndex: number; value: string }>>((rows, line, index) => {
-    const cells = splitCsvLine(line);
-    const firstCell = (cells[0] ?? '').trim();
-    const lower = firstCell.toLowerCase();
+/**
+ * 학번 열 결정:
+ * 1) 첫 행에 '학번' / student_id 같은 헤더가 있으면 그 열을 사용하고 헤더 행은 건너뜀
+ *    (구글폼 응답 CSV처럼 타임스탬프·이름 열이 앞에 있어도 동작)
+ * 2) 헤더가 없으면 유효한 학번이 가장 많은 열을 사용
+ */
+function detectColumn(table: string[][]): { columnIndex: number; headerDetected: boolean } {
+  const headerIndex = (table[0] ?? []).findIndex(isHeaderCell);
+  if (headerIndex >= 0) return { columnIndex: headerIndex, headerDetected: true };
 
-    if (index === 0 && ['student_id', 'studentid', 'id', '학번'].includes(lower)) {
-      return rows;
+  const width = Math.max(0, ...table.map((cells) => cells.length));
+  let best = 0;
+  let bestScore = -1;
+
+  for (let column = 0; column < width; column += 1) {
+    const score = table.filter((cells) =>
+      validateStudentId(normalizeStudentId(cells[column] ?? '')),
+    ).length;
+
+    if (score > bestScore) {
+      best = column;
+      bestScore = score;
     }
+  }
 
-    rows.push({ rowIndex: index + 1, value: firstCell });
-    return rows;
-  }, []);
+  return { columnIndex: best, headerDetected: false };
 }
 
 export function parseParticipants(input: string): ValidationResult {
-  const rows = extractInputRows(input);
+  const lines = input
+    .replace(/^﻿/, '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line, index) => ({ rowIndex: index + 1, line }))
+    .filter(({ line }) => line.trim() !== '');
+
+  const table = lines.map(({ line }) => splitCsvLine(line));
+  const { columnIndex, headerDetected } = detectColumn(table);
+
   const seen = new Set<string>();
   const invalidRows: InvalidRow[] = [];
   const participants: Participant[] = [];
 
-  for (const row of rows) {
-    const rawValue = row.value.trim();
+  lines.forEach(({ rowIndex }, index) => {
+    if (headerDetected && index === 0) return;
 
-    if (!rawValue) {
-      invalidRows.push({ rowIndex: row.rowIndex, rawValue: row.value, reason: 'EMPTY' });
-      continue;
-    }
+    const rawValue = table[index][columnIndex] ?? '';
+    const reject = (reason: InvalidReason) => invalidRows.push({ rowIndex, rawValue, reason });
 
-    const normalizedId = normalizeStudentId(rawValue);
+    if (!rawValue) return reject('EMPTY');
 
-    if (!validateStudentId(normalizedId)) {
-      invalidRows.push({
-        rowIndex: row.rowIndex,
-        rawValue: row.value,
-        reason: 'INVALID_FORMAT',
-      });
-      continue;
-    }
+    const studentId = normalizeStudentId(rawValue);
+    if (!validateStudentId(studentId)) return reject('INVALID_FORMAT');
+    if (seen.has(studentId)) return reject('DUPLICATE');
 
-    if (seen.has(normalizedId)) {
-      invalidRows.push({ rowIndex: row.rowIndex, rawValue: row.value, reason: 'DUPLICATE' });
-      continue;
-    }
+    seen.add(studentId);
+    participants.push({ rawValue, studentId, maskedId: maskStudentId(studentId) });
+  });
 
-    seen.add(normalizedId);
-    participants.push({
-      id: rawValue,
-      normalizedId,
-      maskedId: maskStudentId(normalizedId),
-    });
-  }
-
-  participants.sort((a, b) => a.normalizedId.localeCompare(b.normalizedId));
+  participants.sort((a, b) => a.studentId.localeCompare(b.studentId));
 
   return {
-    totalRows: rows.filter((row) => row.value.trim()).length,
+    columnIndex,
+    headerDetected,
+    totalRows: lines.length - (headerDetected ? 1 : 0),
     validCount: participants.length,
     duplicateCount: invalidRows.filter((row) => row.reason === 'DUPLICATE').length,
     invalidRows,
@@ -140,33 +162,29 @@ export function parseParticipants(input: string): ValidationResult {
   };
 }
 
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export async function sha256Hex(input: string): Promise<string> {
-  if (!crypto.subtle) {
-    throw new Error('현재 브라우저에서 SHA-256 기능을 사용할 수 없습니다.');
+  if (!crypto?.subtle) {
+    throw new Error('현재 브라우저에서 SHA-256 기능을 사용할 수 없습니다. (https 또는 localhost 필요)');
   }
 
-  const data = new TextEncoder().encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-  return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return toHex(new Uint8Array(hashBuffer));
 }
 
 export function generateSeed(): string {
-  if (!crypto.getRandomValues) {
+  if (!crypto?.getRandomValues) {
     throw new Error('현재 브라우저에서 보안 난수 기능을 사용할 수 없습니다.');
   }
 
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-
-  return Array.from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 export async function createParticipantHash(participants: Participant[]): Promise<string> {
-  const sortedIds = participants.map((participant) => participant.normalizedId).sort();
+  const sortedIds = participants.map((participant) => participant.studentId).sort();
   return sha256Hex(sortedIds.join('\n'));
 }
 
@@ -176,29 +194,25 @@ export async function drawWinners(
   seed: string,
   prizes: PrizeConfig[] = DEFAULT_PRIZES,
 ): Promise<DrawResult> {
-  if (participants.length < totalPrizeCount) {
-    throw new Error(`참가자가 부족합니다. 현재 ${participants.length}명, 필요 ${totalPrizeCount}명`);
+  const required = totalPrizeCount(prizes);
+
+  if (participants.length < required) {
+    throw new Error(`참가자가 부족합니다. 현재 ${participants.length}명, 필요 ${required}명`);
   }
 
   const scored = await Promise.all(
     participants.map(async (participant) => ({
       participant,
-      score: await sha256Hex(`${seed}:${participant.normalizedId}`),
+      score: await sha256Hex(`${seed}:${participant.studentId}`),
     })),
   );
 
   scored.sort((a, b) => a.score.localeCompare(b.score));
 
-  const winners = {
-    '1등': [],
-    '2등': [],
-    '3등': [],
-  } as Record<Rank, Participant[]>;
-
+  const winners = { '1등': [], '2등': [], '3등': [] } as Record<Rank, Participant[]>;
   let cursor = 0;
-  const drawOrder = [...prizes].sort((a, b) => a.revealOrder - b.revealOrder);
 
-  for (const prize of drawOrder) {
+  for (const prize of prizesInRevealOrder(prizes)) {
     winners[prize.rank] = scored
       .slice(cursor, cursor + prize.count)
       .map((item) => item.participant);
@@ -210,45 +224,78 @@ export async function drawWinners(
     participantCount: participants.length,
     participantHash: await createParticipantHash(participants),
     seed,
-    algorithm: 'SHA-256(seed + ":" + normalizedStudentId), ascending sort',
+    algorithm: ALGORITHM,
+    prizes,
     winners,
     generatedAt: new Date().toISOString(),
-    appVersion: '1.0.0',
+    appVersion: __APP_VERSION__,
   };
 }
 
-export function makeSampleData(): string {
-  return Array.from({ length: 90 }, (_, index) => String((10 + index) * 1_000_000)).join('\n');
+export function makeSampleData(count = 90): string {
+  return Array.from({ length: count }, (_, index) => String(20250001 + index * 37)).join('\n');
 }
 
-function publicResult(result: DrawResult) {
-  return {
+type ExportOptions = {
+  /** true면 학번을 마스킹 (당첨자 공개 페이지용) */
+  masked?: boolean;
+};
+
+function displayId(participant: Participant, { masked = false }: ExportOptions): string {
+  return masked ? participant.maskedId : participant.studentId;
+}
+
+export function resultToJson(result: DrawResult, options: ExportOptions = {}): string {
+  const winners = Object.fromEntries(
+    RANKS.map((rank) => [rank, result.winners[rank].map((winner) => displayId(winner, options))]),
+  ) as Record<Rank, string[]>;
+
+  const output: ResultFile = {
     eventName: result.eventName,
     participantCount: result.participantCount,
     participantHash: result.participantHash,
     seed: result.seed,
     algorithm: result.algorithm,
-    winners: {
-      '1등': result.winners['1등'].map((winner) => winner.normalizedId),
-      '2등': result.winners['2등'].map((winner) => winner.normalizedId),
-      '3등': result.winners['3등'].map((winner) => winner.normalizedId),
-    },
+    prizes: result.prizes,
+    winners,
+    masked: Boolean(options.masked),
     generatedAt: result.generatedAt,
     appVersion: result.appVersion,
   };
+
+  return JSON.stringify(output, null, 2);
 }
 
-export function resultToJson(result: DrawResult): string {
-  return JSON.stringify(publicResult(result), null, 2);
+/** 당첨자 공개 페이지에 올릴 파일 (마스킹된 JSON) */
+export const PUBLIC_RESULT_FILENAME = 'winners.json';
+
+export function resultToPublicJson(result: DrawResult): string {
+  return resultToJson(result, { masked: true });
 }
 
-export function resultToCsv(result: DrawResult): string {
-  const lines = ['rank,student_id'];
-  const ranks: Rank[] = ['1등', '2등', '3등'];
+/** 공개 페이지에서 winners.json을 읽을 때 사용. 형식이 맞지 않으면 에러 */
+export function parseResultFile(json: unknown): ResultFile {
+  const data = json as Partial<ResultFile> | null;
+  const ok =
+    data !== null &&
+    typeof data === 'object' &&
+    typeof data.eventName === 'string' &&
+    Array.isArray(data.prizes) &&
+    typeof data.winners === 'object' &&
+    data.winners !== null &&
+    RANKS.every((rank) => Array.isArray(data.winners?.[rank]));
 
-  for (const rank of ranks) {
+  if (!ok) throw new Error('결과 파일 형식이 올바르지 않습니다.');
+  return data as ResultFile;
+}
+
+export function resultToCsv(result: DrawResult, options: ExportOptions = {}): string {
+  const prizeName = Object.fromEntries(result.prizes.map((prize) => [prize.rank, prize.name]));
+  const lines = ['rank,prize,student_id'];
+
+  for (const rank of RANKS) {
     for (const winner of result.winners[rank]) {
-      lines.push(`${rank},${winner.normalizedId}`);
+      lines.push(`${rank},${prizeName[rank] ?? ''},${displayId(winner, options)}`);
     }
   }
 
@@ -256,8 +303,9 @@ export function resultToCsv(result: DrawResult): string {
 }
 
 export function downloadTextFile(filename: string, content: string, type: string): void {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
+  // Excel에서 한글이 깨지지 않도록 CSV에는 BOM 추가
+  const body = type.startsWith('text/csv') ? `﻿${content}` : content;
+  const url = URL.createObjectURL(new Blob([body], { type }));
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
