@@ -7,3 +7,15 @@ raffle-result*.json
 private-data/
 .env
 .env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# logs / tooling
+*.log
+coverage/
+.claude/settings.local.json
