@@ -8,10 +8,12 @@ import { useStageControls } from '../hooks/useStageControls';
 import { onFullscreenChange, toggleFullscreen } from '../lib/fullscreen';
 import {
   PUBLIC_RESULT_FILENAME,
+  SEED_FILENAME,
   downloadTextFile,
   resultToCsv,
   resultToJson,
   resultToPublicJson,
+  resultToSeedText,
 } from '../lib/raffle';
 import EndCredits from '../scenes/EndCredits';
 import RevealScene from '../scenes/RevealScene';
@@ -105,6 +107,12 @@ export default function StagePage() {
               onClick={() => downloadTextFile(PUBLIC_RESULT_FILENAME, resultToPublicJson(result), 'application/json')}
             >
               공개용 {PUBLIC_RESULT_FILENAME}
+            </button>
+            <button
+              className="op-btn"
+              onClick={() => downloadTextFile(SEED_FILENAME, resultToSeedText(result), 'text/plain;charset=utf-8')}
+            >
+              시드 저장
             </button>
           </>
         ) : null}

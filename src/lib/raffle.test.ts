@@ -9,6 +9,7 @@ import {
   resultToCsv,
   resultToJson,
   resultToPublicJson,
+  resultToSeedText,
   parseResultFile,
   totalPrizeCount,
 } from './raffle';
@@ -110,6 +111,18 @@ describe('내보내기', () => {
     expect(resultToCsv(result, { masked: true })).not.toContain(first.studentId);
     expect(resultToCsv(result, { masked: true })).toContain(maskStudentId(first.studentId));
     expect(JSON.parse(resultToJson(result)).winners['1등']).toEqual([first.studentId]);
+  });
+});
+
+describe('시드 파일', () => {
+  it('seed·참가자 해시를 담고 당첨자 학번은 넣지 않음', async () => {
+    const participants = parseParticipants(makeSampleData(30)).participants;
+    const result = await drawWinners('t', participants, SEED);
+    const text = resultToSeedText(result);
+
+    expect(text).toContain(`seed: ${SEED}`);
+    expect(text).toContain(result.participantHash);
+    expect(text).not.toContain(result.winners['1등'][0].studentId);
   });
 });
 

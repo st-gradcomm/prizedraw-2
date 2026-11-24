@@ -302,6 +302,25 @@ export function resultToCsv(result: DrawResult, options: ExportOptions = {}): st
   return lines.join('\n');
 }
 
+export const SEED_FILENAME = 'raffle-seed.txt';
+
+/** 시드와 검증 정보만 담은 텍스트 (당첨자 학번은 포함하지 않음) */
+export function resultToSeedText(result: DrawResult): string {
+  return [
+    `행사명: ${result.eventName}`,
+    `seed: ${result.seed}`,
+    `참가자 수: ${result.participantCount}`,
+    `참가자 해시: ${result.participantHash}`,
+    `알고리즘: ${result.algorithm}`,
+    `추첨 시각: ${result.generatedAt}`,
+    `앱 버전: ${result.appVersion}`,
+    '',
+    '같은 참가자 목록과 seed로 각 학번의 SHA-256(seed + ":" + 학번)을 계산해',
+    '작은 순서대로 정렬하면 같은 결과가 재현됩니다.',
+    '',
+  ].join('\n');
+}
+
 export function downloadTextFile(filename: string, content: string, type: string): void {
   // Excel에서 한글이 깨지지 않도록 CSV에는 BOM 추가
   const body = type.startsWith('text/csv') ? `﻿${content}` : content;
