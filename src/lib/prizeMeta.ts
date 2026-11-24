@@ -18,7 +18,7 @@ export interface PrizeMeta {
 
 export const PRIZE_META: Record<Rank, PrizeMeta> = {
   '3등': { ordinal: '3rd', image: battery, revealMode: 'together', spinSeconds: 3.6 },
-  '2등': { ordinal: '2nd', image: keyboard, revealMode: 'oneByOne', spinSeconds: 5 },
+  '2등': { ordinal: '2nd', image: keyboard, revealMode: 'together', spinSeconds: 5 },
   '1등': { ordinal: '1st', image: airpods, revealMode: 'oneByOne', spinSeconds: 7.5 },
 };
 
