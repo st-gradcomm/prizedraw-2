@@ -5,9 +5,9 @@ import type { RaffleController } from '../hooks/useRaffle';
 import { PRIZE_META } from '../lib/prizeMeta';
 import { makeSampleData, reasonLabel } from '../lib/raffle';
 
-/** 진행자 준비 화면 (촬영 대상 아님): 참가자 입력·검증 → 목록 고정 */
+/** 진행자 준비 화면 (촬영 대상 아님): 참가자 입력·검증 → 목록 고정 → 시드 고정 */
 export default function SetupScreen({ raffle }: { raffle: RaffleController }) {
-  const { validation } = raffle;
+  const { validation, locked } = raffle;
   const [dragging, setDragging] = useState(false);
   const hasInput = raffle.inputText.trim() !== '';
   const lineup = [...raffle.revealOrder].reverse();
@@ -15,6 +15,7 @@ export default function SetupScreen({ raffle }: { raffle: RaffleController }) {
   const handleDrop = (event: DragEvent) => {
     event.preventDefault();
     setDragging(false);
+    if (locked) return;
     const file = event.dataTransfer.files[0];
     if (file) void raffle.loadFile(file);
   };
@@ -53,32 +54,35 @@ export default function SetupScreen({ raffle }: { raffle: RaffleController }) {
               <textarea
                 value={raffle.inputText}
                 onChange={(event) => raffle.setInputText(event.target.value)}
+                readOnly={Boolean(locked)}
                 placeholder={'CSV 파일을 여기로 끌어오거나 학번을 붙여넣으세요\n구글폼 응답 CSV도 그대로 사용 가능 (학번 열 자동 인식)'}
                 spellCheck={false}
               />
-              <div className="dropzone__actions">
-                <label className="btn btn--ghost">
-                  CSV 불러오기
-                  <input
-                    type="file"
-                    accept=".csv,.txt,.tsv"
-                    hidden
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void raffle.loadFile(file);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
-                <button className="btn btn--ghost" onClick={() => raffle.setInputText(makeSampleData())}>
-                  리허설용 샘플
-                </button>
-                {hasInput && (
-                  <button className="btn btn--ghost" onClick={() => raffle.setInputText('')}>
-                    비우기
+              {!locked && (
+                <div className="dropzone__actions">
+                  <label className="btn btn--ghost">
+                    CSV 불러오기
+                    <input
+                      type="file"
+                      accept=".csv,.txt,.tsv"
+                      hidden
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void raffle.loadFile(file);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <button className="btn btn--ghost" onClick={() => raffle.setInputText(makeSampleData())}>
+                    리허설용 샘플
                   </button>
-                )}
-              </div>
+                  {hasInput && (
+                    <button className="btn btn--ghost" onClick={() => raffle.setInputText('')}>
+                      비우기
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -135,9 +139,25 @@ export default function SetupScreen({ raffle }: { raffle: RaffleController }) {
 
             {raffle.error && <p className="setup__error" role="alert">{raffle.error}</p>}
 
-            <button className="btn btn--primary" disabled={!raffle.canLock} onClick={() => void raffle.lock()}>
-              참가자 목록 고정하고 상영 준비
-            </button>
+            {locked ? (
+              <>
+                <p className="setup__hint">
+                  참가자 {locked.participants.length}명 고정됨 · 참가자 해시 <code>{locked.participantHash.slice(0, 16)}…</code>
+                  <br />
+                  버튼을 누른 시각이 seed가 되고 그 즉시 추첨됩니다.
+                </p>
+                <button className="btn btn--primary" disabled={!raffle.canFixSeed} onClick={() => void raffle.fixSeed()}>
+                  시드 고정 (지금 시각)하고 상영 시작
+                </button>
+                <button className="btn btn--ghost" onClick={raffle.reset}>
+                  목록 다시 수정
+                </button>
+              </>
+            ) : (
+              <button className="btn btn--primary" disabled={!raffle.canLock} onClick={() => void raffle.lock()}>
+                참가자 목록 고정
+              </button>
+            )}
             <p className="setup__keys">
               상영 중 조작 — <kbd>Space</kbd> <kbd>Enter</kbd> <kbd>→</kbd> 다음 · <kbd>F</kbd> 전체화면 · 마우스를 움직이면 버튼 표시
             </p>

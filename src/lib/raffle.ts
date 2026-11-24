@@ -175,12 +175,12 @@ export async function sha256Hex(input: string): Promise<string> {
   return toHex(new Uint8Array(hashBuffer));
 }
 
-export function generateSeed(): string {
-  if (!crypto?.getRandomValues) {
-    throw new Error('현재 브라우저에서 보안 난수 기능을 사용할 수 없습니다.');
-  }
-
-  return toHex(crypto.getRandomValues(new Uint8Array(32)));
+/**
+ * 추첨 시각을 seed로 사용한다. (ISO 8601, UTC, 밀리초 단위 — 예: 2026-11-24T03:12:45.123Z)
+ * 사람이 읽을 수 있고 방송 화면의 시각과 대조할 수 있어, 누구나 결과를 재계산해 검증할 수 있다.
+ */
+export function generateSeed(now: Date = new Date()): string {
+  return now.toISOString();
 }
 
 export async function createParticipantHash(participants: Participant[]): Promise<string> {

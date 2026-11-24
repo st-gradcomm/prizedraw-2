@@ -35,9 +35,11 @@ export default function StagePage() {
   const advance = () => advanceRef.current?.();
   const fullscreen = () => void toggleFullscreen().catch(() => undefined);
 
-  useStageControls({ onNext: advance, onFullscreen: fullscreen, enabled: phase !== 'INPUT' });
+  const onSetup = phase === 'INPUT' || phase === 'LOCKED';
+  useStageControls({ onNext: advance, onFullscreen: fullscreen, enabled: !onSetup });
 
-  if (phase === 'INPUT') return <SetupScreen raffle={raffle} />;
+  // 목록 고정 후 시드 고정 전까지는 진행자 준비 화면에서 대기
+  if (onSetup) return <SetupScreen raffle={raffle} />;
 
   const backToSetup = () => {
     const message =

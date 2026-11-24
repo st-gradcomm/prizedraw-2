@@ -101,7 +101,6 @@
 
 #### Web Crypto API
 
-- `crypto.getRandomValues()`를 통해 seed 생성 가능
 - `crypto.subtle.digest()`를 통해 SHA-256 해시 계산 가능
 - 브라우저 내장 기능이므로 별도 서버가 필요 없다.
 
@@ -117,7 +116,7 @@ flowchart LR
   D --> E[중복 제거]
   E --> F[참가자 목록 고정]
   F --> G[참가자 목록 해시 생성]
-  G --> H[Seed 생성]
+  G --> H[시드 고정 버튼 클릭 시각으로 Seed 생성]
   H --> I[SHA-256 기반 점수 계산]
   I --> J[정렬 및 당첨자 배정]
   J --> K[방송용 결과 공개]
@@ -132,7 +131,7 @@ flowchart LR
 4. 잘못된 값과 중복 값을 제거한다.
 5. 최종 참가자 목록을 고정한다.
 6. 참가자 목록의 SHA-256 해시를 생성한다.
-7. 추첨 seed를 생성한다.
+7. 운영자가 `시드 고정` 버튼을 누르면 그 시각으로 추첨 seed를 생성한다.
 8. 각 참가자에 대해 `SHA-256(seed + studentId)` 값을 계산한다.
 9. 해시 점수가 작은 순서대로 당첨자를 선정한다.
 10. 3등, 2등, 1등 순서로 화면에 공개한다.
@@ -410,15 +409,12 @@ participantHash = SHA-256(sortedStudentIds.join('\n'))
 
 ### 11.4 Seed 생성
 
-seed는 브라우저의 보안 난수 생성 기능을 사용한다.
+seed는 참가자 목록을 고정하는 순간의 현재 시각을 사용한다. 형식은 ISO 8601(UTC, 밀리초 단위)이다.
+사람이 읽을 수 있는 값이라 방송 화면의 시각과 대조할 수 있고, 누구나 같은 seed로 결과를 재계산할 수 있다.
 
 ```ts
-function generateSeed(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+function generateSeed(now: Date = new Date()): string {
+  return now.toISOString(); // 예: 2026-11-24T03:12:45.123Z
 }
 ```
 
@@ -648,7 +644,7 @@ raffle-result-2026-05-23.json
   "eventName": "ST:talk 경품 추첨",
   "participantCount": 183,
   "participantHash": "sha256-...",
-  "seed": "7fd9a3...",
+  "seed": "2026-11-24T03:12:45.123Z",
   "algorithm": "SHA-256(seed + normalizedStudentId), ascending sort",
   "winners": {
     "1등": ["2023***345"],
@@ -717,7 +713,7 @@ private-data/
 
 1. 참가자 목록을 추첨 전 고정한다.
 2. 참가자 목록 해시를 화면에 표시한다.
-3. 추첨 seed를 생성하고 표시한다.
+3. 별도의 `시드 고정` 버튼을 누른 시각으로 seed를 생성하고 표시한다.
 4. seed와 참가자 목록 해시를 결과 파일에 저장한다.
 5. 알고리즘을 공개 가능한 형태로 유지한다.
 
@@ -902,7 +898,7 @@ feature/*  기능 개발 브랜치
 | validateStudentId | 유효/무효 학번 판별 |
 | maskStudentId | 학번 마스킹 처리 |
 | createParticipantHash | 동일 목록의 동일 해시 보장 |
-| generateSeed | seed 길이 및 형식 확인 |
+| generateSeed | ISO 8601 시각 형식 확인 |
 | drawWinners | 중복 없는 당첨자 선정 |
 | exportResultToCsv | CSV 형식 검증 |
 
@@ -1235,7 +1231,7 @@ MVP 이후 다음 기능을 추가할 수 있다.
 - `Vite + React + TypeScript` 기반 정적 웹앱
 - `Tailwind CSS` 기반 방송용 UI
 - `Framer Motion` 기반 화면 전환 및 카드 애니메이션
-- `Web Crypto API` 기반 seed 생성 및 SHA-256 해시 계산
+- 현재 시각 기반 seed 생성, `Web Crypto API` 기반 SHA-256 해시 계산
 - `PapaParse` 기반 CSV 파싱
 - `canvas-confetti` 기반 1등 발표 효과
 - `GitHub Pages` 배포

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PRIZES,
   drawWinners,
+  generateSeed,
   makeSampleData,
   maskStudentId,
   parseParticipants,
@@ -13,7 +14,7 @@ import {
 } from './raffle';
 import type { PrizeConfig } from '../types/raffle';
 
-const SEED = 'a'.repeat(64);
+const SEED = '2026-11-24T03:12:45.123Z';
 
 describe('parseParticipants', () => {
   it('정규화·형식 검증·중복 제거', () => {
@@ -51,6 +52,20 @@ describe('parseParticipants', () => {
     expect(result.headerDetected).toBe(false);
     expect(result.columnIndex).toBe(1);
     expect(result.validCount).toBe(2);
+  });
+});
+
+describe('generateSeed', () => {
+  it('현재 시각을 ISO 8601(UTC, 밀리초) 문자열로 반환', () => {
+    expect(generateSeed(new Date(Date.UTC(2026, 10, 24, 3, 12, 45, 123)))).toBe(SEED);
+    expect(generateSeed()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  });
+
+  it('시각이 다르면 결과도 달라짐', async () => {
+    const participants = parseParticipants(makeSampleData(30)).participants;
+    const a = await drawWinners('t', participants, generateSeed(new Date(0)));
+    const b = await drawWinners('t', participants, generateSeed(new Date(1)));
+    expect(a.winners).not.toEqual(b.winners);
   });
 });
 

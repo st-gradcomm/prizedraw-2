@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_PRIZES,
+  createParticipantHash,
   drawWinners,
   generateSeed,
   parseParticipants,
@@ -11,11 +12,18 @@ import type { DrawResult, Participant, PrizeConfig } from '../types/raffle';
 
 /**
  * INPUT  : 참가자 입력/검증
- * READY  : 목록 고정 + 추첨 완료 (결과는 아직 비공개)
+ * LOCKED : 참가자 목록 고정 (seed는 아직 없음 — 시드 고정 버튼을 기다림)
+ * READY  : 시드 고정 + 추첨 완료 (결과는 아직 비공개)
  * REVEAL : 등수별 공개 진행 중 (3등 → 2등 → 1등)
  * RESULT : 전체 결과
  */
-export type RafflePhase = 'INPUT' | 'READY' | 'REVEAL' | 'RESULT';
+export type RafflePhase = 'INPUT' | 'LOCKED' | 'READY' | 'REVEAL' | 'RESULT';
+
+interface LockedList {
+  eventName: string;
+  participants: Participant[];
+  participantHash: string;
+}
 
 export interface RevealStep {
   prize: PrizeConfig;
@@ -31,8 +39,9 @@ export interface RevealStep {
  */
 const SESSION_KEY = 'prizedraw:session';
 
+/** LOCKED는 저장하지 않음 (참가자 목록을 보관하지 않으므로 새로고침 시 INPUT으로 돌아감) */
 interface SavedSession {
-  phase: Exclude<RafflePhase, 'INPUT'>;
+  phase: Exclude<RafflePhase, 'INPUT' | 'LOCKED'>;
   result: DrawResult;
   revealIndex: number;
 }
@@ -51,13 +60,15 @@ export function useRaffle(prizes: PrizeConfig[] = DEFAULT_PRIZES) {
   const [phase, setPhase] = useState<RafflePhase>(saved?.phase ?? 'INPUT');
   const [eventName, setEventName] = useState(saved?.result.eventName ?? 'ST:talk 경품 추첨');
   const [inputText, setInputText] = useState('');
+  const [locked, setLocked] = useState<LockedList | null>(null);
+  const [drawing, setDrawing] = useState(false);
   const [result, setResult] = useState<DrawResult | null>(saved?.result ?? null);
   const [revealIndex, setRevealIndex] = useState(saved?.revealIndex ?? -1);
   const [error, setError] = useState('');
 
   useEffect(() => {
     try {
-      if (phase === 'INPUT' || !result) {
+      if (phase === 'INPUT' || phase === 'LOCKED' || !result) {
         sessionStorage.removeItem(SESSION_KEY);
       } else {
         const session: SavedSession = { phase, result, revealIndex };
@@ -74,6 +85,7 @@ export function useRaffle(prizes: PrizeConfig[] = DEFAULT_PRIZES) {
   const required = totalPrizeCount(prizes);
   const validation = useMemo(() => parseParticipants(inputText), [inputText]);
   const canLock = phase === 'INPUT' && validation.validCount >= required;
+  const canFixSeed = phase === 'LOCKED' && locked !== null && !drawing;
 
   const currentStep: RevealStep | null =
     result && revealIndex >= 0
@@ -96,24 +108,40 @@ export function useRaffle(prizes: PrizeConfig[] = DEFAULT_PRIZES) {
     }
   }, []);
 
-  /** 참가자 목록을 고정하고 seed 생성 + 추첨까지 한 번에 수행 (공개는 별도) */
+  /** 참가자 목록만 고정 (seed·추첨은 fixSeed에서). 참가자 해시를 먼저 계산해 공개할 수 있게 함 */
   const lock = useCallback(async () => {
     if (!canLock) return;
     try {
-      const drawn = await drawWinners(
-        eventName.trim() || '경품 추첨',
-        validation.participants,
-        generateSeed(),
-        prizes,
-      );
+      const participants = validation.participants;
+      setLocked({
+        eventName: eventName.trim() || '경품 추첨',
+        participants,
+        participantHash: await createParticipantHash(participants),
+      });
+      setError('');
+      setPhase('LOCKED');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '참가자 목록을 고정할 수 없습니다.');
+    }
+  }, [canLock, eventName, validation.participants]);
+
+  /** 버튼을 누른 그 시각을 seed로 고정하고 추첨 수행 (공개는 별도) */
+  const fixSeed = useCallback(async () => {
+    if (!canFixSeed || !locked) return;
+    const seed = generateSeed();
+    setDrawing(true);
+    try {
+      const drawn = await drawWinners(locked.eventName, locked.participants, seed, prizes);
       setResult(drawn);
       setRevealIndex(-1);
       setError('');
       setPhase('READY');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '참가자 목록을 고정할 수 없습니다.');
+      setError(caught instanceof Error ? caught.message : '추첨을 진행할 수 없습니다.');
+    } finally {
+      setDrawing(false);
     }
-  }, [canLock, eventName, prizes, validation.participants]);
+  }, [canFixSeed, locked, prizes]);
 
   /** 다음 등수로 진행. 마지막 등수 이후에는 RESULT로 이동 */
   const next = useCallback(() => {
@@ -126,8 +154,9 @@ export function useRaffle(prizes: PrizeConfig[] = DEFAULT_PRIZES) {
     }
   }, [result, revealIndex, revealOrder.length]);
 
-  /** 입력 단계로 복귀 — seed와 결과는 폐기됨 */
+  /** 입력 단계로 복귀 — 고정된 목록, seed, 결과는 폐기됨 */
   const reset = useCallback(() => {
+    setLocked(null);
     setResult(null);
     setRevealIndex(-1);
     setError('');
@@ -147,6 +176,9 @@ export function useRaffle(prizes: PrizeConfig[] = DEFAULT_PRIZES) {
     required,
     canLock,
     lock,
+    locked,
+    canFixSeed,
+    fixSeed,
     result,
     revealOrder,
     currentStep,

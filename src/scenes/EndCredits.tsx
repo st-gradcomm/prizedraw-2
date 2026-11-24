@@ -69,7 +69,7 @@ export default function EndCredits({ advanceRef, result, revealOrder }: EndCredi
                 <CandidLogo height={40} />
                 <span>제 42대 총졸업준비위원회 X 취업진로본부</span>
                 <span className="credits__seed">
-                  참가자 {result.participantCount}명 · seed {result.seed.slice(0, 8)}…{result.seed.slice(-8)}
+                  참가자 {result.participantCount}명 · seed {result.seed}
                 </span>
               </footer>,
             ].map((node, index) => (
