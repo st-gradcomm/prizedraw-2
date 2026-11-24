@@ -1,13 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@fontsource/allura/400.css';
-import '@fontsource/great-vibes/400.css';
-import '@fontsource/playfair-display/600.css';
-import '@fontsource/playfair-display/700.css';
-import '@fontsource/playfair-display/700-italic.css';
-import '@fontsource/noto-serif-kr/500.css';
-import '@fontsource/noto-serif-kr/700.css';
-import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import '@fontsource/pinyon-script/400.css';
+import '@fontsource-variable/oswald';
+import '@fontsource/gowun-batang/400.css';
+import '@fontsource/gowun-batang/700.css';
+import '@fontsource/gowun-dodum/400.css';
 import './styles/base.css';
 import './styles/stage.css';
 import './styles/reveal.css';

@@ -239,7 +239,6 @@ body.hide-cursor * {
 .marquee__lucky {
   margin: 36px 0 0;
   font-size: 44px;
-  font-style: italic;
   letter-spacing: 0.18em;
   color: var(--gold);
 }

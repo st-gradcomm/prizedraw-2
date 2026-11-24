@@ -219,7 +219,6 @@
 .draw__ordinal {
   font-size: 72px;
   font-weight: 700;
-  font-style: italic;
 }
 
 .draw__name {
@@ -418,7 +417,6 @@
 
 .ticket__label {
   font-family: var(--font-display);
-  font-style: italic;
   font-weight: 600;
   opacity: 0.85;
 }
