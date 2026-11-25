@@ -8,7 +8,7 @@ import { PRIZE_META, revealGroups } from '../lib/prizeMeta';
 import Countdown from './Countdown';
 import Reel, { type ReelSize, type ReelStatus } from './Reel';
 
-type Phase = 'countdown' | 'title' | 'draw';
+type Phase = 'title' | 'countdown' | 'draw';
 
 const CINEMA_EASE = [0.65, 0, 0.35, 1] as const;
 
@@ -27,14 +27,14 @@ interface RevealSceneProps {
 
 /**
  * 등수 하나의 공개 흐름
- *  카운트다운(자동) → 경품 타이틀 카드 → (다음) 릴 회전 → 멈춤 → (다음) 다음 그룹 … → (다음) 다음 등수
+ *  경품 소개 카드 → (다음) 카운트다운 3-2-1(자동) → 릴 회전 → 멈춤 → (다음) 다음 그룹 … → (다음) 다음 등수
  */
 export default function RevealScene({ advanceRef, step, pool, onFinish }: RevealSceneProps) {
   const { prize, winners } = step;
   const meta = PRIZE_META[prize.rank];
   const groups = useMemo(() => revealGroups(prize.rank, winners.length), [prize.rank, winners.length]);
 
-  const [phase, setPhase] = useState<Phase>('countdown');
+  const [phase, setPhase] = useState<Phase>('title');
   const [groupIndex, setGroupIndex] = useState(-1);
   const [landed, setLanded] = useState<Set<number>>(() => new Set());
 
@@ -45,16 +45,18 @@ export default function RevealScene({ advanceRef, step, pool, onFinish }: Reveal
 
   useAdvance(advanceRef, () => {
     if (phase === 'title') {
-      // 대기 중인 릴을 잠깐 보여준 뒤 회전 시작
-      setPhase('draw');
-      window.setTimeout(() => setGroupIndex(0), 700);
+      setPhase('countdown');
     } else if (phase === 'draw' && groupLanded) {
       if (groupIndex + 1 < groups.length) setGroupIndex(groupIndex + 1);
       else onFinish();
     }
   });
 
-  const handleCountdownDone = useCallback(() => setPhase('title'), []);
+  // 카운트다운이 끝나면 대기 중인 릴을 잠깐 보여준 뒤 회전 시작
+  const handleCountdownDone = useCallback(() => {
+    setPhase('draw');
+    window.setTimeout(() => setGroupIndex(0), 700);
+  }, []);
   const markLanded = useCallback(
     (index: number) => setLanded((previous) => new Set(previous).add(index)),
     [],
